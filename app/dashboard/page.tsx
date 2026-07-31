@@ -1,7 +1,7 @@
 "use client";
 import StatCard from "@/components/ui/StatCard";
 import ActionButton from "@/components/ui/ActionButton";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import {
   Users,
   Building2,
@@ -50,31 +50,32 @@ const stats = [
   },
 ];
 
+
+
+const Home = () => {
+    const router = useRouter();
 const actions = [
   {
     title: "Add Employee",
     icon: UserPlus,
-    action: () => console.log("Add Employee"),
+    action: () => router.push("/dashboard/employees"),
   },
   {
     title: "Attendance",
     icon: CalendarDays,
-    action: () => console.log("Attendance"),
+    action: () => router.push("/dashboard/attendance"),
   },
   {
     title: "Departments",
     icon: Building2,
-    action: () => console.log("Departments"),
+    action: () => router.push("/dashboard/departments"),
   },
   {
     title: "Reports",
     icon: FileText,
-    action: () => console.log("Reports"),
+    action: () => router.push("/dashboard/reports"),
   },
 ];
-
-const Home = () => {
-    // const router = useRouter();
   return (
     <>
       <h1 className="text-3xl font-bold">Dashboard</h1>
