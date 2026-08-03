@@ -9,9 +9,10 @@ const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>(initialEmployee);
  
   const handleDelete =(id: number)=>{
-    setEmployees((currentEmployees)=>
-    currentEmployees.filter((employees)=>employees.id !== id));
+    setEmployees((currentEmployees)=> currentEmployees.filter((employees)=>employees.id !== id));
   };
+
+
   return (
     <section>
       <h1 className="text-3xl font-bold">Employees</h1>
@@ -22,7 +23,7 @@ const EmployeesPage = () => {
 
       <div className="mt-6">
         <EmployeeTable employees={employees}
-        onDelete={handleDelete} />
+        onDelete={handleDelete} />  
       </div>
     </section>
   );
