@@ -3,13 +3,25 @@ import { useState } from "react";
 import type { Employee } from "../types/employee.types";
 
 type EmployeeFormProps = {
-  employee: Employee;
+  mode: "add" | "edit";
+  employee?: Employee;
   onSave: (employee: Employee) => void;
   onCancel: () => void;
 };
-
-const EmployeeForm = ({ employee, onSave, onCancel }: EmployeeFormProps) => {
-  const [formData, setFormData] = useState<Employee>(employee);
+const emptyEmployee: Employee = {
+  id: 0,
+  name: "",
+  email: "",
+  department: "",
+  status: "Active",
+};
+const EmployeeForm = ({
+  mode,
+  employee,
+  onSave,
+  onCancel,
+}: EmployeeFormProps) => {
+  const [formData, setFormData] = useState<Employee>(employee ?? emptyEmployee);
 
   return (
     <form
@@ -17,9 +29,11 @@ const EmployeeForm = ({ employee, onSave, onCancel }: EmployeeFormProps) => {
         event.preventDefault();
         onSave(formData);
       }}
-      className="mt-6 rounded-lg bg-white p-6 shadow"
+      className="p-6"
     >
-      <h2 className="text-xl font-semibold">Edit Employee</h2>
+      <h2 className="text-xl font-semibold">
+        {mode === "edit" ? "Edit Employee" : "Add Employee"}
+      </h2>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
@@ -98,11 +112,10 @@ const EmployeeForm = ({ employee, onSave, onCancel }: EmployeeFormProps) => {
         </button>
 
         <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border px-4 py-2"
+          type="submit"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-white"
         >
-          Cancel
+          {mode === "edit" ? "Save Changes" : "Add Employee"}
         </button>
       </div>
     </form>
