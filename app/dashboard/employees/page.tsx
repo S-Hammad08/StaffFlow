@@ -6,6 +6,7 @@ import type { Employee } from "./types/employee.types";
 import { employees as initialEmployee } from "./data/employees";
 import EmployeeForm from "./components/EmployeeForm";
 import EmployeeModal from "./components/EmployeeModal";
+import EmployeeSearch from "./components/EmployeeSearch";
 
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>(initialEmployee);
@@ -13,6 +14,7 @@ const EmployeesPage = () => {
     null,
   );
   const [isAdding, setIsAdding] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   /////////////////////// CRUD Functions ////////////////
   const handleDelete = (id: number) => {
     setEmployees((currentEmployees) =>
@@ -40,17 +42,10 @@ const EmployeesPage = () => {
 
     setIsAdding(false);
   };
-  // {
-  //   isAdding && (
-  //     <EmployeeModal onClose={() => setIsAdding(false)}>
-  //       <EmployeeForm
-  //         mode="add"
-  //         onSave={handleAdd}
-  //         onCancel={() => setIsAdding(false)}
-  //       />
-  //     </EmployeeModal>
-  //   );
-  // }
+  const filteredEmployees = employees.filter((employee) =>
+    employee.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   return (
     <section>
       <div className="flex items-center justify-between">
@@ -67,10 +62,10 @@ const EmployeesPage = () => {
           Add Employee
         </button>
       </div>
-
+      <EmployeeSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
       <div className="mt-6">
         <EmployeeTable
-          employees={employees}
+          employees={filteredEmployees}
           onDelete={handleDelete}
           onEdit={handleEdit}
         />
