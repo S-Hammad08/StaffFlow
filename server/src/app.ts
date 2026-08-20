@@ -58,3 +58,4 @@ app.use("/api/reports", reportRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+export default app;
