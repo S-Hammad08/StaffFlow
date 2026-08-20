@@ -2,7 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-
+import { connectDatabase } from "./config/database.js";
 import { env } from "./config/env.js";
 import { AppError } from "./errors/AppError.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
@@ -46,8 +46,32 @@ app.use(cookieParser());
 app.get("/api/health", (_request, response) => {
   response.json({
     success: true,
-    data: { status: "ok" },
+    data: {
+      status: "ok",
+    },
   });
+});
+
+let databaseConnectionPromise: Promise<void> | null = null;
+
+function ensureDatabaseConnection() {
+  if (!databaseConnectionPromise) {
+    databaseConnectionPromise = connectDatabase().catch((error) => {
+      databaseConnectionPromise = null;
+      throw error;
+    });
+  }
+
+  return databaseConnectionPromise;
+}
+
+app.use(async (_request, _response, next) => {
+  try {
+    await ensureDatabaseConnection();
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use("/api/auth", authRouter);
@@ -58,4 +82,5 @@ app.use("/api/reports", reportRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
 export default app;
