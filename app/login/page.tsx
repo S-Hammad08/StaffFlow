@@ -149,10 +149,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs leading-5 text-slate-500">
-            Demo account details are created by the backend seed command and documented
-            in the project README.
-          </p>
         </div>
       </section>
     </main>

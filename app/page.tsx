@@ -38,11 +38,8 @@ export default function Home() {
           </Link>
         </header>
 
-        <section className="grid flex-1 items-center gap-14 py-20 lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="grid flex-1 items-start gap-14 py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-20">
           <div>
-            <p className="mb-5 inline-flex rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-sm font-medium text-blue-200">
-              People operations, made clear
-            </p>
             <h1 className="max-w-3xl text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
               Run your team from one calm workspace.
             </h1>
@@ -72,9 +69,6 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="border-t border-white/10 py-5 text-sm text-slate-500">
-          StaffFlow · A portfolio-ready employee management system
-        </footer>
       </div>
     </main>
   );
