@@ -4,11 +4,11 @@
   "private": true,
   "description": "Express and MongoDB API for StaffFlow",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "seed": "tsx src/scripts/seed.ts",
     "test:integration": "tsx src/tests/integration.ts",
     "test:database": "tsx src/tests/memoryDatabase.ts"
