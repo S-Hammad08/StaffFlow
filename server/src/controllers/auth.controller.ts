@@ -17,7 +17,7 @@ type RegisterInput = z.infer<typeof registerSchema>;
 const cookieOptions: CookieOptions = {
   httpOnly: true,
   secure: env.NODE_ENV === "production",
-  sameSite: "lax",
+  sameSite: env.NODE_ENV === "production" ? "none" : "lax",
   maxAge: AUTH_COOKIE_MAX_AGE_MS,
   path: "/",
 };
@@ -59,7 +59,7 @@ export const logout: RequestHandler = (_request, response) => {
   response.clearCookie(AUTH_COOKIE_NAME, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
   });
   response.json({ success: true, message: "Logged out successfully." });
