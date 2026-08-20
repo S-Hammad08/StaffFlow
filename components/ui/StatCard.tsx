@@ -13,13 +13,20 @@ const colorClasses = {
     bg: "bg-purple-100",
     text: "text-purple-600",
   },
+  amber: {
+    bg: "bg-amber-100",
+    text: "text-amber-600",
+  },
+  red: {
+    bg: "bg-red-100",
+    text: "text-red-600",
+  },
 };
 
-type StatCardProp = {
+type StatCardProps = {
   title: string;
-  value: number;
+  value: number | string;
   icon: LucideIcon;
-  percentage: number;
   description: string;
   color: keyof typeof colorClasses;
 };
@@ -28,35 +35,27 @@ const StatCard = ({
   title,
   value,
   icon: Icon,
-  percentage,
   description,
   color,
-}: StatCardProp) => {
+}: StatCardProps) => {
   const selectedColor = colorClasses[color];
 
   return (
-    <div className="rounded-lg bg-white p-5 shadow">
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-slate-500">{title}</p>
+          <p className="text-sm font-medium text-slate-500">{title}</p>
 
-          <h2 className="mt-2 text-2xl font-bold">{value}</h2>
+          <p className="mt-2 text-2xl font-bold text-slate-950">{value}</p>
 
-          <p
-            className={`mt-2 text-sm ${
-              percentage >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {percentage >= 0 ? "+" : ""}
-            {percentage}% {description}
-          </p>
+          <p className="mt-2 text-xs text-slate-500">{description}</p>
         </div>
 
         <div className={`rounded-lg ${selectedColor.bg} p-2`}>
           <Icon className={`h-6 w-6 ${selectedColor.text}`} />
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

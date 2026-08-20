@@ -1,121 +1,150 @@
 "use client";
-import { useState } from "react";
-import type { Employee } from "../types/employee.types";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoaderCircle } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import type { Department } from "@/app/dashboard/departments/types/department.types";
+import type { Employee, EmployeeInput } from "../types/employee.types";
+
+const employeeSchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(100, "Name is too long."),
+  email: z.string().trim().min(1, "Email is required.").email("Enter a valid email."),
+  department: z.string().min(1, "Department is required."),
+  status: z.enum(["Active", "Inactive"]),
+});
+
+type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
 type EmployeeFormProps = {
   mode: "add" | "edit";
   employee?: Employee;
-  onSave: (employee: Employee) => void;
+  departments: Department[];
+  isPending?: boolean;
+  onSave: (employee: EmployeeInput) => void | Promise<void>;
   onCancel: () => void;
 };
-const emptyEmployee: Employee = {
-  id: 0,
+
+const emptyEmployee: EmployeeFormValues = {
   name: "",
   email: "",
   department: "",
   status: "Active",
 };
+
 const EmployeeForm = ({
   mode,
   employee,
+  departments,
+  isPending = false,
   onSave,
   onCancel,
 }: EmployeeFormProps) => {
-  const [formData, setFormData] = useState<Employee>(employee ?? emptyEmployee);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<EmployeeFormValues>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues: employee
+      ? {
+          name: employee.name,
+          email: employee.email,
+          department: employee.department,
+          status: employee.status,
+        }
+      : emptyEmployee,
+  });
+
+  const fieldClassName =
+    "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-3 focus:ring-blue-100";
 
   return (
     <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSave(formData);
-      }}
+      onSubmit={handleSubmit(onSave)}
       className="p-6"
+      noValidate
     >
-      <h2 className="text-xl font-semibold">
-        {mode === "edit" ? "Edit Employee" : "Add Employee"}
-      </h2>
-
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm font-medium">Name</label>
-
+          <label htmlFor="employee-name" className="mb-2 block text-sm font-semibold text-slate-700">Name</label>
           <input
+            id="employee-name"
             type="text"
-            value={formData.name}
-            onChange={(event) =>
-              setFormData({
-                ...formData,
-                name: event.target.value,
-              })
-            }
-            className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+            autoComplete="name"
+            aria-invalid={Boolean(errors.name)}
+            {...register("name")}
+            className={fieldClassName}
+            placeholder="e.g. Ali Khan"
           />
+          {errors.name && <p className="mt-1.5 text-sm text-red-600">{errors.name.message}</p>}
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Email</label>
-
+          <label htmlFor="employee-email" className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
           <input
+            id="employee-email"
             type="email"
-            value={formData.email}
-            onChange={(event) =>
-              setFormData({
-                ...formData,
-                email: event.target.value,
-              })
-            }
-            className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+            autoComplete="email"
+            aria-invalid={Boolean(errors.email)}
+            {...register("email")}
+            className={fieldClassName}
+            placeholder="ali@company.com"
           />
+          {errors.email && <p className="mt-1.5 text-sm text-red-600">{errors.email.message}</p>}
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Department</label>
-
-          <input
-            type="text"
-            value={formData.department}
-            onChange={(event) =>
-              setFormData({
-                ...formData,
-                department: event.target.value,
-              })
-            }
-            className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium">Status</label>
-
+          <label htmlFor="employee-department" className="mb-2 block text-sm font-semibold text-slate-700">Department</label>
           <select
-            value={formData.status}
-            onChange={(event) =>
-              setFormData({
-                ...formData,
-                status: event.target.value as Employee["status"],
-              })
-            }
-            className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
+            id="employee-department"
+            aria-invalid={Boolean(errors.department)}
+            {...register("department")}
+            className={fieldClassName}
+          >
+            <option value="">Select a department</option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.name}>{department.name}</option>
+            ))}
+          </select>
+          {errors.department && <p className="mt-1.5 text-sm text-red-600">{errors.department.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="employee-status" className="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+          <select
+            id="employee-status"
+            aria-invalid={Boolean(errors.status)}
+            {...register("status")}
+            className={fieldClassName}
           >
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
+          {errors.status && <p className="mt-1.5 text-sm text-red-600">{errors.status.message}</p>}
         </div>
       </div>
 
-      <div className="mt-6 flex gap-3">
+      <div className="mt-7 flex justify-end gap-3 border-t border-slate-100 pt-5">
         <button
-          type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-white"
+          type="button"
+          onClick={onCancel}
+          disabled={isPending}
+          className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          Save
+          Cancel
         </button>
-
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-white"
+          disabled={isPending || departments.length === 0}
+          className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {mode === "edit" ? "Save Changes" : "Add Employee"}
+          {isPending && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {isPending
+            ? "Saving…"
+            : mode === "edit"
+              ? "Save changes"
+              : "Add employee"}
         </button>
       </div>
     </form>

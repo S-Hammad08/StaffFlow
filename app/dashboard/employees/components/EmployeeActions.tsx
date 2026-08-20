@@ -1,4 +1,4 @@
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 type EmployeeActionsProps = {
   onDelete: () => void;
@@ -8,24 +8,22 @@ type EmployeeActionsProps = {
 const EmployeeActions = ({ onDelete, onEdit }: EmployeeActionsProps) => {
   return (
     <div className="flex items-center gap-2">
-      <button className="rounded p-2 hover:bg-gray-100" type="button">
-        <Eye className="h-5 w-5" />
-      </button>
-
       <button
         onClick={onEdit}
-        className="rounded p-2 hover:bg-blue-100"
+        className="rounded-lg p-2 text-blue-600 hover:bg-blue-50"
         type="button"
+        aria-label="Edit employee"
       >
-        <Pencil className="h-5 w-5 text-blue-600" />
+        <Pencil className="h-4 w-4" aria-hidden="true" />
       </button>
 
       <button
         onClick={onDelete}
-        className="rounded p-2 hover:bg-red-100"
+        className="rounded-lg p-2 text-red-600 hover:bg-red-50"
         type="button"
+        aria-label="Delete employee"
       >
-        <Trash2 className="h-5 w-5 text-red-600" />
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   );

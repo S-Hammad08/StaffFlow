@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Navbar from "@/components/layout/Navbar";
-import Sidebar from "@/components/layout/Sidebar";
+import { Providers } from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "StaffFlow",
-  description: "Employee Management Dashboard",
+  title: {
+    default: "StaffFlow",
+    template: "%s | StaffFlow",
+  },
+  description: "A practical employee management dashboard for growing teams.",
 };
 
 export default function RootLayout({
@@ -25,20 +16,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full">
-        <Navbar />
-
-        <div className="flex">
-          <Sidebar />
-
-          <main className="flex-1 bg-slate-100 p-6">
-            {children}
-          </main>
-        </div>
+    <html lang="en">
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
