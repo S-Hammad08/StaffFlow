@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { Eye, LogOut, Menu } from "lucide-react";
 import type { AuthUser } from "@/services/auth.service";
 
 type NavbarProps = {
@@ -17,6 +17,7 @@ const Navbar = ({ user, isLoggingOut, onMenuClick, onLogout }: NavbarProps) => {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const isDemo = user.role === "demo";
 
   return (
     <header className="sticky top-0 z-20 flex h-18 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
@@ -30,9 +31,17 @@ const Navbar = ({ user, isLoggingOut, onMenuClick, onLogout }: NavbarProps) => {
       </button>
 
       <div className="ml-auto flex items-center gap-3">
+        {isDemo && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+            Demo · Read-only
+          </span>
+        )}
         <div className="hidden text-right sm:block">
           <p className="text-sm font-semibold text-slate-800">{user.name}</p>
-          <p className="text-xs text-slate-500">Administrator</p>
+          <p className="text-xs text-slate-500">
+            {isDemo ? "Portfolio viewer" : "Administrator"}
+          </p>
         </div>
         <div
           aria-hidden="true"

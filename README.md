@@ -1,12 +1,13 @@
 # StaffFlow
 
-StaffFlow is a full-stack employee management dashboard for small and growing teams. It keeps employee records, departments, daily attendance, and HR reporting in one responsive workspace with administrator authentication.
+StaffFlow is a full-stack employee management dashboard for small and growing teams. It keeps employee records, departments, daily attendance, and HR reporting in one responsive workspace with role-aware authentication.
 
 The codebase intentionally uses familiar React patterns: pages own feature state, presentational components receive data through props, callbacks report user actions upward, and TanStack Query owns remote server state.
 
 ## Features
 
-- Secure administrator login and logout with a JWT stored in an HTTP-only cookie
+- Secure admin and read-only demo login with a JWT stored in an HTTP-only cookie
+- Backend-enforced demo write protection across employees, departments, and attendance
 - Protected dashboard pages and authenticated API routes
 - Employee CRUD with reusable add/edit form, Zod validation, and duplicate-email handling
 - Combined employee search, department/status filters, name sorting, and API pagination
@@ -42,12 +43,12 @@ staffflow/
 │   │   ├── departments/         # Department CRUD feature
 │   │   ├── attendance/          # Daily attendance feature
 │   │   └── reports/             # Summary reporting feature
-│   ├── login/                   # Administrator login
+│   ├── login/                   # Admin and automatic demo login
 │   └── providers.tsx            # Query Client and toast providers
 ├── components/                  # Shared layout and UI components
 ├── lib/                         # Axios client and date helpers
 ├── services/                    # Cross-feature authentication service
-├── proxy.ts                     # Optimistic dashboard cookie protection
+├── proxy.ts                     # Dashboard route proxy entry point
 └── server/
     └── src/
         ├── config/              # Validated environment and database setup
@@ -105,9 +106,14 @@ CLIENT_URL=http://localhost:3000
 NODE_ENV=development
 APP_TIMEZONE=Asia/Karachi
 ALLOW_REGISTRATION=false
+DEMO_LOGIN_ENABLED=true
+DEMO_LOGIN_EMAIL=demo@staffflow.demo
 SEED_ADMIN_NAME=StaffFlow Admin
 SEED_ADMIN_EMAIL=admin@staffflow.demo
 SEED_ADMIN_PASSWORD=replace-with-a-strong-demo-password
+SEED_DEMO_NAME=StaffFlow Demo
+SEED_DEMO_EMAIL=demo@staffflow.demo
+SEED_DEMO_PASSWORD=replace-with-a-separate-demo-password
 ```
 
 Use a long random value for `JWT_SECRET`. Real secrets belong only in `server/.env`; all `.env` files remain ignored by Git while the placeholder `.env.example` files are committed.
@@ -122,14 +128,22 @@ Make sure MongoDB is running and the backend environment is configured, then run
 npm run seed
 ```
 
-The command safely upserts four departments, twelve fictional employees, today's attendance, and one administrator. It can be run again without intentionally duplicating the demo records.
+The command safely upserts four departments, twelve fictional employees, today's attendance, one administrator, and one read-only demo user. It can be run again without duplicating those records. Existing user passwords and roles are not replaced, so rerunning the seed does not change the current administrator password.
 
-Demo login:
+Administrator login:
 
 - Email: the value of `SEED_ADMIN_EMAIL` (the example uses `admin@staffflow.demo`)
 - Password: the value you set in `SEED_ADMIN_PASSWORD`
 
 The password is read from the environment and is never hard-coded in application source.
+
+Portfolio demo login:
+
+- Set `DEMO_LOGIN_ENABLED=true`.
+- Set `DEMO_LOGIN_EMAIL` to the same address as `SEED_DEMO_EMAIL`.
+- Use the **Login as Demo** button; the browser never receives or stores the demo password.
+
+The API creates the demo session only for the seeded `demo` role. Demo sessions can use normal read endpoints, while API middleware rejects application writes with HTTP 403.
 
 ## Run StaffFlow
 
@@ -158,16 +172,50 @@ npm run server:start
 
 Run the two `start` commands in separate terminals or process containers.
 
+## Deployment configuration
+
+Keep the existing production variables unchanged. Add these runtime values to local `server/.env` and to the backend Vercel project:
+
+```env
+DEMO_LOGIN_ENABLED=true
+DEMO_LOGIN_EMAIL=demo@staffflow.demo
+```
+
+Add the following to local `server/.env`, or whichever trusted environment will run the seed command. They are not required by the frontend or by the running Vercel API after seeding. Use your own values, not these placeholders:
+
+```env
+SEED_DEMO_NAME=StaffFlow Demo
+SEED_DEMO_EMAIL=demo@staffflow.demo
+SEED_DEMO_PASSWORD=replace-with-a-separate-demo-password
+```
+
+`DEMO_LOGIN_EMAIL` and `SEED_DEMO_EMAIL` must match. The frontend deployment needs no additional variables; it continues to use only `NEXT_PUBLIC_API_URL` and never receives demo credentials.
+
+After adding the seed values and confirming `MONGODB_URI` points to the intended database, run `npm run seed` once. This creates the missing demo user without changing the existing administrator password.
+
+Before pushing a deployment, run:
+
+```bash
+npm run lint
+npm run build
+npm run server:build
+npm --prefix server run test:integration
+git diff --check
+```
+
+After deployment, select **Login as Demo**, confirm the read-only badge is visible, open every dashboard page, and exercise employee filters, sorting, pagination, attendance dates, and reports. Confirm write controls are absent. As a final backend check, send a resource `POST`, `PUT`, or `DELETE` with the demo session cookie and verify the API returns HTTP 403 with `Demo account is read-only.` Then log in as the administrator and verify a normal create/update/delete flow still succeeds.
+
 ## API overview
 
-All resource endpoints require the StaffFlow authentication cookie. Only login, registration, logout, and health routes are public-facing.
+All resource endpoints require the StaffFlow authentication cookie. Application write endpoints additionally require the `admin` role. Only login, demo login, registration, logout, and health routes are public-facing.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `POST` | `/api/auth/register` | Create an admin when `ALLOW_REGISTRATION=true` |
 | `POST` | `/api/auth/login` | Authenticate and set the HTTP-only cookie |
+| `POST` | `/api/auth/demo-login` | Open the configured read-only demo session |
 | `POST` | `/api/auth/logout` | Clear the cookie |
-| `GET` | `/api/auth/me` | Return the current administrator |
+| `GET` | `/api/auth/me` | Return the current user and role |
 | `GET/POST` | `/api/employees` | Search/list or create employees |
 | `GET/PUT/DELETE` | `/api/employees/:id` | Read, update, or delete one employee |
 | `GET/POST` | `/api/departments` | List or create departments |
@@ -193,15 +241,16 @@ The first integration-test run downloads a temporary MongoDB binary; later runs 
 ## Security notes
 
 - API authorization is enforced at the data boundary; hiding frontend UI is not treated as security.
-- The Next.js proxy performs only an optimistic cookie-presence redirect.
-- Cookies are HTTP-only, `SameSite=Lax`, and `Secure` in production.
+- Demo sessions receive HTTP 403 with `Demo account is read-only.` on protected writes.
+- The dashboard shell verifies the session through `/auth/me`; the API remains the authorization authority.
+- Cookies are HTTP-only; production uses `Secure` and `SameSite=None`, while local development uses `SameSite=Lax`.
 - CORS permits only `CLIENT_URL`, JSON bodies are limited, and login/register are rate-limited.
 - Registration is disabled by default. The seed workflow is the intended local administrator setup.
 - Password hashes and JWT secrets are never returned by the API.
 
 ## Future improvements
 
-- Role-based access for managers and read-only viewers
+- Additional roles and finer-grained permissions for managers
 - Audit logs for employee and attendance changes
 - Leave approval workflows and CSV exports
 - Automated browser-level tests for the responsive UI

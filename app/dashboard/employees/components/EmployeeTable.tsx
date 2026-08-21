@@ -3,11 +3,12 @@ import StatusBadge from "./StatusBadge";
 import EmployeeActions from "./EmployeeActions";
 type EmployeeTableProp = {
   employees: Employee[];
+  canWrite: boolean;
   onDelete: (employee: Employee) => void;
   onEdit: (employee: Employee) => void;
 };
 
-const EmployeeTable = ({ employees, onDelete, onEdit }: EmployeeTableProp) => {
+const EmployeeTable = ({ employees, canWrite, onDelete, onEdit }: EmployeeTableProp) => {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[760px] text-left text-sm">
@@ -17,7 +18,9 @@ const EmployeeTable = ({ employees, onDelete, onEdit }: EmployeeTableProp) => {
             <th scope="col" className="px-5 py-3.5 font-semibold">Email</th>
             <th scope="col" className="px-5 py-3.5 font-semibold">Department</th>
             <th scope="col" className="px-5 py-3.5 font-semibold">Status</th>
-            <th scope="col" className="px-5 py-3.5 text-right font-semibold">Actions</th>
+            {canWrite && (
+              <th scope="col" className="px-5 py-3.5 text-right font-semibold">Actions</th>
+            )}
           </tr>
         </thead>
 
@@ -39,14 +42,16 @@ const EmployeeTable = ({ employees, onDelete, onEdit }: EmployeeTableProp) => {
                 <StatusBadge status={employee.status} />
               </td>
 
-              <td className="px-5 py-4">
-                <div className="flex justify-end">
-                  <EmployeeActions
-                    onDelete={() => onDelete(employee)}
-                    onEdit={() => onEdit(employee)}
-                  />
-                </div>
-              </td>
+              {canWrite && (
+                <td className="px-5 py-4">
+                  <div className="flex justify-end">
+                    <EmployeeActions
+                      onDelete={() => onDelete(employee)}
+                      onEdit={() => onEdit(employee)}
+                    />
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

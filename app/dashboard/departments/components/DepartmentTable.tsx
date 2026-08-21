@@ -3,12 +3,14 @@ import type { Department } from "../types/department.types";
 
 type DepartmentTableProps = {
   departments: Department[];
+  canWrite: boolean;
   onEdit: (department: Department) => void;
   onDelete: (department: Department) => void;
 };
 
 export default function DepartmentTable({
   departments,
+  canWrite,
   onEdit,
   onDelete,
 }: DepartmentTableProps) {
@@ -20,7 +22,9 @@ export default function DepartmentTable({
             <th scope="col" className="px-5 py-3.5 font-semibold">Department</th>
             <th scope="col" className="px-5 py-3.5 font-semibold">Description</th>
             <th scope="col" className="px-5 py-3.5 font-semibold">Employees</th>
-            <th scope="col" className="px-5 py-3.5 text-right font-semibold">Actions</th>
+            {canWrite && (
+              <th scope="col" className="px-5 py-3.5 text-right font-semibold">Actions</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -45,28 +49,30 @@ export default function DepartmentTable({
                     {department.employeeCount}
                   </span>
                 </td>
-                <td className="px-5 py-4">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(department)}
-                      aria-label={`Edit ${department.name}`}
-                      className="rounded-lg p-2 text-blue-600 hover:bg-blue-50"
-                    >
-                      <Pencil className="h-4 w-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(department)}
-                      disabled={hasEmployees}
-                      title={hasEmployees ? "Move or delete this department's employees first" : `Delete ${department.name}`}
-                      aria-label={`Delete ${department.name}`}
-                      className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    </button>
-                  </div>
-                </td>
+                {canWrite && (
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(department)}
+                        aria-label={`Edit ${department.name}`}
+                        className="rounded-lg p-2 text-blue-600 hover:bg-blue-50"
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(department)}
+                        disabled={hasEmployees}
+                        title={hasEmployees ? "Move or delete this department's employees first" : `Delete ${department.name}`}
+                        aria-label={`Delete ${department.name}`}
+                        className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </td>
+                )}
               </tr>
             );
           })}

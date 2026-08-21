@@ -12,9 +12,17 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((value) => value === "true"),
+  DEMO_LOGIN_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  DEMO_LOGIN_EMAIL: z.string().email().optional(),
   SEED_ADMIN_NAME: z.string().trim().optional(),
   SEED_ADMIN_EMAIL: z.string().email().optional(),
   SEED_ADMIN_PASSWORD: z.string().min(10).optional(),
+  SEED_DEMO_NAME: z.string().trim().optional(),
+  SEED_DEMO_EMAIL: z.string().email().optional(),
+  SEED_DEMO_PASSWORD: z.string().min(10).optional(),
 });
 
 const result = envSchema.safeParse(process.env);

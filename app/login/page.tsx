@@ -2,14 +2,19 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LoaderCircle, LockKeyhole } from "lucide-react";
+import { ArrowLeft, Eye, LoaderCircle, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { getApiErrorMessage } from "@/lib/api";
-import { authKeys, login } from "@/services/auth.service";
+import {
+  authKeys,
+  login,
+  loginAsDemo,
+  type AuthUser,
+} from "@/services/auth.service";
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, "Email is required.").email("Enter a valid email."),
@@ -30,19 +35,24 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  const loginMutation = useMutation({
-    mutationFn: login,
-    onSuccess: (user) => {
-      queryClient.setQueryData(authKeys.currentUser(), user);
-      toast.success(`Welcome back, ${user.name.split(" ")[0]}.`);
-      const requestedPath = new URLSearchParams(window.location.search).get("from");
-      const destination = requestedPath?.startsWith("/dashboard")
-        ? requestedPath
-        : "/dashboard";
-      router.replace(destination);
-      router.refresh();
-    },
-  });
+  const finishLogin = (user: AuthUser) => {
+    queryClient.setQueryData(authKeys.currentUser(), user);
+    toast.success(
+      user.role === "demo"
+        ? "Demo workspace opened in read-only mode."
+        : `Welcome back, ${user.name.split(" ")[0]}.`,
+    );
+    const requestedPath = new URLSearchParams(window.location.search).get("from");
+    const destination = requestedPath?.startsWith("/dashboard")
+      ? requestedPath
+      : "/dashboard";
+    router.replace(destination);
+    router.refresh();
+  };
+
+  const loginMutation = useMutation({ mutationFn: login, onSuccess: finishLogin });
+  const demoLoginMutation = useMutation({ mutationFn: loginAsDemo, onSuccess: finishLogin });
+  const isSigningIn = loginMutation.isPending || demoLoginMutation.isPending;
 
   return (
     <main className="grid min-h-screen bg-slate-100 lg:grid-cols-[1fr_1.05fr]">
@@ -82,10 +92,15 @@ export default function LoginPage() {
           <h1 className="mt-6 text-3xl font-bold tracking-tight text-slate-950">
             Welcome back
           </h1>
-          <p className="mt-2 text-slate-600">Sign in with your StaffFlow admin account.</p>
+          <p className="mt-2 text-slate-600">
+            Sign in as an administrator or explore the read-only portfolio demo.
+          </p>
 
           <form
-            onSubmit={handleSubmit((values) => loginMutation.mutate(values))}
+            onSubmit={handleSubmit((values) => {
+              demoLoginMutation.reset();
+              loginMutation.mutate(values);
+            })}
             className="mt-8 space-y-5"
             noValidate
           >
@@ -139,7 +154,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loginMutation.isPending}
+              disabled={isSigningIn}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loginMutation.isPending && (
@@ -149,6 +164,48 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <div className="my-7 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            Portfolio access
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+            <div className="flex gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700">
+                <Eye className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-semibold text-slate-900">Demo account</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Explore StaffFlow without changing any data. No credentials are displayed
+                  or stored in the browser.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                loginMutation.reset();
+                demoLoginMutation.mutate();
+              }}
+              disabled={isSigningIn}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-blue-300 bg-white px-4 py-3 font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {demoLoginMutation.isPending && (
+                <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+              )}
+              {demoLoginMutation.isPending ? "Opening demo…" : "Login as Demo"}
+            </button>
+            {demoLoginMutation.isError && (
+              <div
+                role="alert"
+                className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {getApiErrorMessage(demoLoginMutation.error, "Unable to open the demo.")}
+              </div>
+            )}
+          </div>
         </div>
       </section>
     </main>

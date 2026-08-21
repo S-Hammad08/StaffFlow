@@ -9,6 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import PageHeader from "@/components/ui/PageHeader";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import Pagination from "@/components/ui/Pagination";
 import { getApiErrorMessage } from "@/lib/api";
 import { departmentKeys, getDepartments } from "../departments/services/department.service";
@@ -34,6 +35,8 @@ const initialFilters: Filters = {
 
 const EmployeesPage = () => {
   const queryClient = useQueryClient();
+  const currentUserQuery = useCurrentUser();
+  const canWrite = currentUserQuery.data?.role === "admin";
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -111,16 +114,20 @@ const EmployeesPage = () => {
     <section>
       <PageHeader
         title="Employees"
-        description="View, search, and manage everyone in your organization."
-        action={<button
-          type="button"
-          onClick={() => setIsAdding(true)}
-          disabled={departmentQuery.isPending || departments.length === 0}
-          title={departments.length === 0 ? "Create a department before adding employees" : undefined}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" /> Add employee
-        </button>}
+        description={
+          canWrite
+            ? "View, search, and manage everyone in your organization."
+            : "View and search everyone in the StaffFlow demo workspace."
+        }
+        action={canWrite ? <button
+            type="button"
+            onClick={() => setIsAdding(true)}
+            disabled={departmentQuery.isPending || departments.length === 0}
+            title={departments.length === 0 ? "Create a department before adding employees" : undefined}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" /> Add employee
+          </button> : undefined}
       />
 
       <EmployeeFilters
@@ -151,16 +158,19 @@ const EmployeesPage = () => {
               description={
                 hasFilters
                   ? "Try changing your search, department, or status filters."
-                  : "Add your first employee to begin building your team directory."
+                  : canWrite
+                    ? "Add your first employee to begin building your team directory."
+                    : "No employee records are available in this demo yet."
               }
-              actionLabel={hasFilters ? undefined : "Add first employee"}
-              onAction={hasFilters ? undefined : () => setIsAdding(true)}
+              actionLabel={!hasFilters && canWrite ? "Add first employee" : undefined}
+              onAction={!hasFilters && canWrite ? () => setIsAdding(true) : undefined}
             />
           </div>
         ) : (
           <>
             <EmployeeTable
               employees={employees}
+              canWrite={canWrite}
               onDelete={setEmployeeToDelete}
               onEdit={setSelectedEmployee}
             />
@@ -174,7 +184,7 @@ const EmployeesPage = () => {
         )}
       </div>
 
-      {selectedEmployee && (
+      {canWrite && selectedEmployee && (
         <EmployeeModal
           title="Edit employee"
           description={`Update ${selectedEmployee.name}'s employee record.`}
@@ -190,7 +200,7 @@ const EmployeesPage = () => {
           />
         </EmployeeModal>
       )}
-      {isAdding && (
+      {canWrite && isAdding && (
         <EmployeeModal
           title="Add employee"
           description="Create a new record for a member of your team."
@@ -206,7 +216,7 @@ const EmployeesPage = () => {
         </EmployeeModal>
       )}
 
-      {employeeToDelete && (
+      {canWrite && employeeToDelete && (
         <ConfirmDialog
           title="Delete employee?"
           description={`Are you sure you want to delete ${employeeToDelete.name}? This action cannot be undone.`}

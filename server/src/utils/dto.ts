@@ -1,3 +1,5 @@
+import type { UserRole } from "../constants/roles.js";
+
 type EmployeeRecord = {
   _id: unknown;
   name: string;
@@ -37,7 +39,7 @@ export function toUserDto(user: {
   _id: unknown;
   name: string;
   email: string;
-  role: "admin";
+  role: UserRole;
 }) {
   return {
     id: String(user._id),

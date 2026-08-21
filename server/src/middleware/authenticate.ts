@@ -2,13 +2,14 @@ import type { RequestHandler } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { AUTH_COOKIE_NAME } from "../constants/auth.js";
+import { isUserRole, type UserRole } from "../constants/roles.js";
 import { AppError } from "../errors/AppError.js";
 import { User } from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 type StaffFlowToken = JwtPayload & {
   userId?: string;
-  role?: "admin";
+  role?: UserRole;
 };
 
 export const authenticate: RequestHandler = asyncHandler(async (request, _response, next) => {
@@ -22,13 +23,16 @@ export const authenticate: RequestHandler = asyncHandler(async (request, _respon
     throw new AppError(401, "Your session is invalid or has expired.");
   }
 
-  if (!payload.userId || payload.role !== "admin") {
+  if (!payload.userId || !isUserRole(payload.role)) {
     throw new AppError(401, "Your session is invalid or has expired.");
   }
 
-  const userExists = await User.exists({ _id: payload.userId, role: "admin" });
-  if (!userExists) throw new AppError(401, "Your account is no longer available.");
+  const user = await User.findById(payload.userId).select("role").lean();
+  if (!user) throw new AppError(401, "Your account is no longer available.");
+  if (user.role !== payload.role) {
+    throw new AppError(401, "Your session is invalid or has expired.");
+  }
 
-  request.user = { id: payload.userId, role: payload.role };
+  request.user = { id: payload.userId, role: user.role };
   next();
 });

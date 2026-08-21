@@ -3,6 +3,7 @@ import type { CookieOptions, RequestHandler, Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { AUTH_COOKIE_MAX_AGE_MS, AUTH_COOKIE_NAME } from "../constants/auth.js";
+import type { UserRole } from "../constants/roles.js";
 import { AppError } from "../errors/AppError.js";
 import { getValidated } from "../middleware/validate.js";
 import { User } from "../models/User.js";
@@ -22,8 +23,8 @@ const cookieOptions: CookieOptions = {
   path: "/",
 };
 
-function issueSession(response: Response, userId: string) {
-  const token = jwt.sign({ userId, role: "admin" }, env.JWT_SECRET, {
+function issueSession(response: Response, user: { id: string; role: UserRole }) {
+  const token = jwt.sign({ userId: user.id, role: user.role }, env.JWT_SECRET, {
     expiresIn: "8h",
   });
   response.cookie(AUTH_COOKIE_NAME, token, cookieOptions);
@@ -39,8 +40,13 @@ export const register: RequestHandler = asyncHandler(async (request, response) =
   if (existingUser) throw new AppError(409, "An account with that email already exists.");
 
   const password = await bcrypt.hash(input.password, 12);
-  const user = await User.create({ ...input, email: input.email.toLowerCase(), password });
-  issueSession(response, String(user._id));
+  const user = await User.create({
+    ...input,
+    email: input.email.toLowerCase(),
+    password,
+    role: "admin",
+  });
+  issueSession(response, { id: String(user._id), role: user.role });
   response.status(201).json({ success: true, data: toUserDto(user) });
 });
 
@@ -51,7 +57,24 @@ export const login: RequestHandler = asyncHandler(async (request, response) => {
     throw new AppError(401, "The email or password is incorrect.");
   }
 
-  issueSession(response, String(user._id));
+  issueSession(response, { id: String(user._id), role: user.role });
+  response.json({ success: true, data: toUserDto(user) });
+});
+
+export const demoLogin: RequestHandler = asyncHandler(async (_request, response) => {
+  if (!env.DEMO_LOGIN_ENABLED || !env.DEMO_LOGIN_EMAIL) {
+    throw new AppError(404, "Demo login is unavailable.");
+  }
+
+  const user = await User.findOne({
+    email: env.DEMO_LOGIN_EMAIL.toLowerCase(),
+    role: "demo",
+  });
+  if (!user) {
+    throw new AppError(503, "Demo account is not configured yet.");
+  }
+
+  issueSession(response, { id: String(user._id), role: user.role });
   response.json({ success: true, data: toUserDto(user) });
 });
 

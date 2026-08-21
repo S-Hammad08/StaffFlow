@@ -6,6 +6,7 @@ import {
   updateAttendance,
 } from "../controllers/attendance.controller.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { requireWriteAccess } from "../middleware/requireWriteAccess.js";
 import { validate } from "../middleware/validate.js";
 import {
   attendanceBodySchema,
@@ -19,10 +20,21 @@ export const attendanceRouter = Router();
 
 attendanceRouter.use(authenticate);
 attendanceRouter.get("/", validate({ query: attendanceQuerySchema }), listAttendance);
-attendanceRouter.post("/bulk", validate({ body: bulkAttendanceSchema }), saveBulkAttendance);
-attendanceRouter.post("/", validate({ body: attendanceBodySchema }), saveAttendanceRecord);
+attendanceRouter.post(
+  "/bulk",
+  requireWriteAccess,
+  validate({ body: bulkAttendanceSchema }),
+  saveBulkAttendance,
+);
+attendanceRouter.post(
+  "/",
+  requireWriteAccess,
+  validate({ body: attendanceBodySchema }),
+  saveAttendanceRecord,
+);
 attendanceRouter.put(
   "/:id",
+  requireWriteAccess,
   validate({ params: idParamsSchema, body: attendanceUpdateSchema }),
   updateAttendance,
 );

@@ -6,6 +6,7 @@ import ActionButton from "@/components/ui/ActionButton";
 import ErrorState from "@/components/ui/ErrorState";
 import PageHeader from "@/components/ui/PageHeader";
 import { getApiErrorMessage } from "@/lib/api";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getReportSummary, reportKeys } from "./reports/services/report.service";
 import { useRouter } from "next/navigation";
 import {
@@ -19,6 +20,8 @@ import {
 
 const Home = () => {
   const router = useRouter();
+  const currentUserQuery = useCurrentUser();
+  const canWrite = currentUserQuery.data?.role === "admin";
   const summaryQuery = useQuery({
     queryKey: reportKeys.summary(),
     queryFn: getReportSummary,
@@ -56,17 +59,17 @@ const Home = () => {
   ];
   const actions = [
     {
-      title: "Manage employees",
+      title: canWrite ? "Manage employees" : "View employees",
       icon: UserPlus,
       action: () => router.push("/dashboard/employees"),
     },
     {
-      title: "Take attendance",
+      title: canWrite ? "Take attendance" : "View attendance",
       icon: CalendarDays,
       action: () => router.push("/dashboard/attendance"),
     },
     {
-      title: "Manage departments",
+      title: canWrite ? "Manage departments" : "View departments",
       icon: Building2,
       action: () => router.push("/dashboard/departments"),
     },

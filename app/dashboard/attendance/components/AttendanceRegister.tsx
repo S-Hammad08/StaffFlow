@@ -17,12 +17,14 @@ const statusStyles: Record<AttendanceStatus, string> = {
 
 type AttendanceRegisterProps = {
   entries: AttendanceEntry[];
+  readOnly: boolean;
   isSaving: boolean;
   onSave: (records: AttendanceRecordInput[]) => void;
 };
 
 export default function AttendanceRegister({
   entries,
+  readOnly,
   isSaving,
   onSave,
 }: AttendanceRegisterProps) {
@@ -115,6 +117,7 @@ export default function AttendanceRegister({
                   <select
                     id={`attendance-${entry.employee.id}`}
                     value={statuses[entry.employee.id]}
+                    disabled={readOnly}
                     onChange={(event) =>
                       setStatuses((current) => ({
                         ...current,
@@ -122,7 +125,7 @@ export default function AttendanceRegister({
                           .value as AttendanceStatus,
                       }))
                     }
-                    className={`rounded-lg border px-3 py-2 text-sm font-semibold outline-none focus:ring-3 focus:ring-blue-100 ${statusStyles[statuses[entry.employee.id]]}`}
+                    className={`rounded-lg border px-3 py-2 text-sm font-semibold outline-none focus:ring-3 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-70 ${statusStyles[statuses[entry.employee.id]]}`}
                   >
                     <option value="Present">Present</option>
                     <option value="Absent">Absent</option>
@@ -147,20 +150,23 @@ export default function AttendanceRegister({
 
       <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-slate-500">
-          Saving updates existing records for this date instead of creating
-          duplicates.
+          {readOnly
+            ? "Demo access is read-only; attendance changes are disabled."
+            : "Saving updates existing records for this date instead of creating duplicates."}
         </p>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSaving && (
-            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-          )}
-          {isSaving ? "Saving…" : "Save attendance"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSaving && (
+              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+            )}
+            {isSaving ? "Saving…" : "Save attendance"}
+          </button>
+        )}
       </div>
     </div>
   );

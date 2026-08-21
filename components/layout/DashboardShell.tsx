@@ -1,15 +1,12 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getApiErrorMessage, isUnauthorizedError } from "@/lib/api";
-import {
-  authKeys,
-  getCurrentUser,
-  logout,
-} from "@/services/auth.service";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { logout } from "@/services/auth.service";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import Navbar from "./Navbar";
@@ -19,11 +16,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const userQuery = useQuery({
-    queryKey: authKeys.currentUser(),
-    queryFn: getCurrentUser,
-    retry: false,
-  });
+  const userQuery = useCurrentUser();
 
   useEffect(() => {
     if (userQuery.error && isUnauthorizedError(userQuery.error)) {

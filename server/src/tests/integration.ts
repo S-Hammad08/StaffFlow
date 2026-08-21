@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer, type Server } from "node:http";
+import bcrypt from "bcryptjs";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 type JsonRecord = Record<string, unknown>;
@@ -14,12 +15,21 @@ async function run() {
   process.env.CLIENT_URL = "http://localhost:3000";
   process.env.APP_TIMEZONE = "UTC";
   process.env.ALLOW_REGISTRATION = "true";
+  process.env.DEMO_LOGIN_ENABLED = "true";
+  process.env.DEMO_LOGIN_EMAIL = "demo@integration.test";
 
-  const [{ app }, { connectDatabase, disconnectDatabase }] = await Promise.all([
+  const [{ app }, { connectDatabase, disconnectDatabase }, { User }] = await Promise.all([
     import("../app.js"),
     import("../config/database.js"),
+    import("../models/User.js"),
   ]);
   await connectDatabase();
+  await User.create({
+    name: "Integration Demo",
+    email: "demo@integration.test",
+    password: await bcrypt.hash(`Demo-Aa1-${randomUUID()}`, 12),
+    role: "demo",
+  });
 
   let server: Server | undefined;
   try {
@@ -52,16 +62,18 @@ async function run() {
       return body;
     }
 
+    const adminPassword = `Test-Aa1-${randomUUID()}`;
     const registration = await request("/auth/register", {
       method: "POST",
       body: JSON.stringify({
         name: "Integration Admin",
         email: "admin@integration.test",
-        password: `Test-Aa1-${randomUUID()}`,
+        password: adminPassword,
       }),
       expectedStatus: 201,
     });
     assert.equal((registration.data as JsonRecord).email, "admin@integration.test");
+    assert.equal((registration.data as JsonRecord).role, "admin");
     assert(cookie.startsWith("staffflow_token="));
 
     await request("/departments", {
@@ -158,6 +170,76 @@ async function run() {
       method: "DELETE",
       expectedStatus: 409,
     });
+
+    await request("/auth/logout", { method: "POST" });
+    const demoSession = await request("/auth/demo-login", { method: "POST" });
+    assert.equal((demoSession.data as JsonRecord).role, "demo");
+
+    const demoEmployees = await request("/employees");
+    assert.equal((demoEmployees.data as unknown[]).length, 2);
+    await request("/departments");
+    await request(`/attendance?date=${today}`);
+    await request("/reports/summary");
+    const demoCurrentUser = await request("/auth/me");
+    assert.equal((demoCurrentUser.data as JsonRecord).role, "demo");
+
+    const blockedCreate = await request("/employees", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Blocked Demo",
+        email: "blocked@integration.test",
+        department: "IT",
+        status: "Active",
+      }),
+      expectedStatus: 403,
+    });
+    assert.equal(blockedCreate.success, false);
+    assert.equal(blockedCreate.message, "Demo account is read-only.");
+
+    const blockedUpdate = await request(`/employees/${employeeId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: "Blocked Update",
+        email: "ali@integration.test",
+        department: "IT",
+        status: "Active",
+      }),
+      expectedStatus: 403,
+    });
+    assert.equal(blockedUpdate.message, "Demo account is read-only.");
+
+    const blockedDelete = await request(`/employees/${employeeId}`, {
+      method: "DELETE",
+      expectedStatus: 403,
+    });
+    assert.equal(blockedDelete.message, "Demo account is read-only.");
+
+    const blockedDepartmentWrite = await request("/departments", {
+      method: "POST",
+      body: JSON.stringify({ name: "Blocked", description: "Demo write" }),
+      expectedStatus: 403,
+    });
+    assert.equal(blockedDepartmentWrite.message, "Demo account is read-only.");
+
+    const blockedAttendanceWrite = await request("/attendance/bulk", {
+      method: "POST",
+      body: JSON.stringify({
+        date: today,
+        records: [{ employeeId, status: "Present" }],
+      }),
+      expectedStatus: 403,
+    });
+    assert.equal(blockedAttendanceWrite.message, "Demo account is read-only.");
+
+    await request("/auth/logout", { method: "POST" });
+    const adminSession = await request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: "admin@integration.test",
+        password: adminPassword,
+      }),
+    });
+    assert.equal((adminSession.data as JsonRecord).role, "admin");
 
     await request(`/employees/${employeeId}`, { method: "DELETE" });
     const attendanceAfterDelete = await request(`/attendance?date=${today}`);

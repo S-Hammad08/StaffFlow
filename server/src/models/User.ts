@@ -1,10 +1,11 @@
 import { model, Schema, type HydratedDocument } from "mongoose";
+import { USER_ROLES, type UserRole } from "../constants/roles.js";
 
 export type UserDocument = HydratedDocument<{
   name: string;
   email: string;
   password: string;
-  role: "admin";
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 }>;
@@ -20,7 +21,7 @@ const userSchema = new Schema(
       maxlength: 254,
     },
     password: { type: String, required: true, select: false },
-    role: { type: String, enum: ["admin"], default: "admin" },
+    role: { type: String, enum: USER_ROLES, default: "admin" },
   },
   { timestamps: true },
 );

@@ -8,6 +8,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import PageHeader from "@/components/ui/PageHeader";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { formatDateKey, getLocalDateKey } from "@/lib/date";
 import { getApiErrorMessage } from "@/lib/api";
 import AttendanceRegister from "./components/AttendanceRegister";
@@ -20,6 +21,8 @@ import type { AttendanceRecordInput } from "./types/attendance.types";
 
 export default function AttendancePage() {
   const queryClient = useQueryClient();
+  const currentUserQuery = useCurrentUser();
+  const canWrite = currentUserQuery.data?.role === "admin";
   const [selectedDate, setSelectedDate] = useState(getLocalDateKey);
   const attendanceQuery = useQuery({
     queryKey: attendanceKeys.day(selectedDate),
@@ -45,7 +48,11 @@ export default function AttendancePage() {
     <section>
       <PageHeader
         title="Attendance"
-        description="Record daily attendance and review saved entries by date."
+        description={
+          canWrite
+            ? "Record daily attendance and review saved entries by date."
+            : "Review saved attendance by date in read-only mode."
+        }
         action={
           <div>
             <label htmlFor="attendance-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -83,6 +90,7 @@ export default function AttendancePage() {
           <AttendanceRegister
             key={`${selectedDate}-${attendanceQuery.dataUpdatedAt}`}
             entries={attendanceQuery.data.data}
+            readOnly={!canWrite}
             isSaving={saveMutation.isPending}
             onSave={handleSave}
           />

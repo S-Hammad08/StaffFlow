@@ -5,7 +5,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "admin";
+  role: "admin" | "demo";
 };
 
 export type LoginInput = {
@@ -15,6 +15,11 @@ export type LoginInput = {
 
 export async function login(input: LoginInput) {
   const response = await api.post<ApiResponse<AuthUser>>("/auth/login", input);
+  return response.data.data;
+}
+
+export async function loginAsDemo() {
+  const response = await api.post<ApiResponse<AuthUser>>("/auth/demo-login");
   return response.data.data;
 }
 
